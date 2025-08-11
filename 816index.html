@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>探寻围术期免疫治疗肺癌新模式：强效新辅，精准辅助</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Calm Harmony (Warm Neutrals with Teal and Gold Accents) -->
+    <!-- Application Structure Plan: A two-part narrative SPA. Section 1, "强效新辅," uses interactive charts to establish the efficacy of neoadjuvant therapy with data from CM816/77T. Section 2, "精准辅助," features an interactive flowchart that guides the user through the clinical decision-making process based on pCR status, now with integrated visual evidence. This structure was chosen to mirror the clinical logic, making the complex strategy intuitive and easy to follow, moving from establishing efficacy to applying results. -->
+    <!-- Visualization & Content Choices: Report Info -> Goal -> Viz/Presentation -> Interaction -> Justification. 1. pCR rates -> Compare -> Bar Chart (Chart.js) -> Toggle button (CM816/77T) -> Direct comparison reinforces data consistency. 2. OS rates -> Inform -> Large stat callouts & Donut Chart (Chart.js) -> Static display -> Highlights key survival outcomes effectively. 3. Adjuvant Decision Logic -> Organize/Guide -> Interactive HTML/CSS Flowchart with lines/arrows -> Clickable paths to reveal content -> Simulates the clinical decision process, making it more engaging and memorable. The survival curve charts have been replaced with text-based analysis, simplifying the design while retaining the core evidence. This design supports the narrative structure and enhances user understanding. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans SC', sans-serif;
+            background-color: #F8F7F4;
+            color: #333333;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 350px;
+            max-height: 50vh;
+        }
+        @media (max-width: 768px) {
+            .chart-container {
+                height: 300px;
+            }
+        }
+        .tab-button {
+            transition: all 0.3s ease;
+        }
+        .tab-button.active {
+            background-color: #005A70;
+            color: #FFFFFF;
+            font-weight: 700;
+        }
+        .tab-button:not(.active) {
+            background-color: #E0E0E0;
+            color: #333333;
+        }
+        .flowchart-node {
+            border: 2px solid #005A70;
+            background-color: #ffffff;
+            padding: 1rem 1.5rem;
+            border-radius: 0.5rem;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            position: relative;
+        }
+        .flowchart-connector {
+            position: relative;
+            height: 2rem;
+            width: 2px;
+            background-color: #005A70;
+            margin: 0 auto;
+        }
+        .flowchart-choice {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .flowchart-choice.selected {
+            background-color: #C0A062;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 10px rgba(0,0,0,0.1);
+        }
+        .result-card {
+            transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+            opacity: 0;
+            transform: translateY(20px);
+            max-height: 0;
+            overflow: hidden;
+        }
+        .result-card.visible {
+            opacity: 1;
+            transform: translateY(0);
+            max-height: 1000px;
+        }
+        .highlight-text {
+            color: #005A70;
+            font-weight: 700;
+        }
+        .accent-text {
+            color: #C0A062;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <header class="bg-white shadow-md py-4">
+        <div class="container mx-auto px-4 text-center">
+            <h1 class="text-2xl md:text-3xl font-bold text-[#005A70]">探寻围术期免疫治疗肺癌新模式：强效新辅，精准辅助</h1>
+            <p class="text-xs text-gray-400 mt-2">基于发表于2025ASCO的最新CheckMate 816 & 77T研究数据制作</p>
+            <p class="text-sm md:text-base text-gray-600 mt-1">核心观念：告别围术期免疫治疗一刀切，816和77T对比研究表明，并非所有患者都能从术后的免疫辅助治疗中显著获益，优先采取术前新辅助治疗，术后应再根据新辅助疗效精准决策，判断是否需要围术期免疫辅助治疗，为不同患者群体选择最优的术后管理策略，减轻患者额外的治疗负担。</p>
+            <p class="text-xs text-gray-400 mt-2">FDA对于辅助治疗态度，要求新研究应证实辅助阶段免疫治疗的价值，而当前众多免疫辅助治疗三期研究结果大相径庭，获益人群不确定</p>
+        </div>
+    </header>
+
+    <main class="container mx-auto p-4 md:p-8">
+
+        <!-- Section 1: 强效新辅 -->
+        <section id="neoadjuvant" class="mb-16">
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-bold mb-2"><span class="text-[#005A70]">第一步：</span>强效新辅</h2>
+                <p class="text-lg text-gray-700 max-w-3xl mx-auto">术前强效治疗，为患者带来深度病理缓解与长期生存获益，是优化围术期治疗的基石。使用欧狄沃新辅助治疗，仅需<strong>3周期</strong>治疗，即可让<strong>四分之一</strong>患者实现pCR。这部分实现pCR的患者，其<strong>5年OS率高达95%</strong>，做到了简单、高效、高质量的治疗。</p>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl shadow-lg">
+                <h3 class="text-xl font-bold text-center mb-4">核心证据：病理完全缓解(pCR)率的突破</h3>
+                <div class="flex justify-center mb-6 space-x-2">
+                    <button id="btn-cm816" class="tab-button active px-4 py-2 rounded-lg text-sm md:text-base">CheckMate 816</button>
+                    <button id="btn-cm77t" class="tab-button px-4 py-2 rounded-lg text-sm md:text-base">CheckMate 77T</button>
+                </div>
+                <div id="pcr-chart-container" class="chart-container">
+                    <canvas id="pcrChart"></canvas>
+                </div>
+                <p id="chart-caption" class="text-center text-gray-600 mt-4 text-sm">欧狄沃®+化疗组的pCR率显著优于单纯化疗组。</p>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-8 mt-8">
+                <div class="bg-white p-6 rounded-xl shadow-lg flex flex-col items-center justify-center text-center">
+                    <h3 class="text-xl font-bold mb-3">长期总生存(OS)获益</h3>
+                    <p class="text-gray-600 mb-4">CheckMate 816研究证实，新辅助治疗带来扎实的长期生存优势。</p>
+                    <div class="flex items-baseline space-x-4">
+                        <div>
+                            <p class="text-5xl font-bold highlight-text">65%</p>
+                            <p class="font-semibold">欧狄沃®+化疗</p>
+                        </div>
+                        <div class="text-2xl font-bold text-gray-400">vs</div>
+                        <div>
+                            <p class="text-5xl font-bold text-gray-500">55%</p>
+                            <p class="font-semibold">单纯化疗</p>
+                        </div>
+                    </div>
+                    <p class="mt-4 font-bold text-lg">5年OS率</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-lg flex flex-col items-center justify-center text-center">
+                    <h3 class="text-xl font-bold mb-3">pCR患者的卓越预后</h3>
+                    <p class="text-gray-600 mb-4">实现pCR，意味着近乎“治愈”的可能。</p>
+                    <div class="relative w-40 h-40">
+                        <canvas id="osDonutChart"></canvas>
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <span class="text-4xl font-bold accent-text">95%</span>
+                        </div>
+                    </div>
+                    <p class="mt-4 font-bold text-lg">pCR患者的5年OS率 (CM816)</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 2: 精准辅助 -->
+        <section id="adjuvant" class="mb-12">
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-bold mb-2"><span class="text-[#005A70]">第二步：</span>精准辅助</h2>
+                <p class="text-lg text-gray-700 max-w-3xl mx-auto">告别“一刀切”，根据新辅助疗效精准决策，为不同患者群体选择最优的术后管理策略。</p>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl shadow-lg">
+                <h3 class="text-xl font-bold text-center mb-6">个体化决策流程</h3>
+                <div class="relative flex flex-col items-center">
+                    <!-- Flowchart Structure -->
+                    <div class="flowchart-node w-full md:w-1/2">
+                        <p class="font-bold text-lg">患者接受新辅助治疗</p>
+                        <p class="text-sm">(欧狄沃®+化疗)</p>
+                    </div>
+                    <div class="flowchart-connector"></div>
+                    <div class="flowchart-node w-full md:w-1/2">
+                        <p class="font-bold text-lg">术后病理评估</p>
+                        <p class="text-sm text-gray-500">请点击下方按钮，根据pCR状态查看临床决策</p>
+                    </div>
+                    <div class="flex w-full md:w-1/2 justify-center h-8 relative">
+                         <div class="w-1/2 h-full absolute left-0 top-0 border-b-2 border-[#005A70]"></div>
+                         <div class="w-1/2 h-full absolute right-0 top-0 border-b-2 border-[#005A70]"></div>
+                         <div class="w-2 h-full absolute left-1/2 top-0 -ml-1 border-r-2 border-[#005A70]"></div>
+                    </div>
+                    
+                    <div class="w-full mt-12 flex flex-col md:flex-row justify-center items-start gap-8 md:gap-16">
+                        <!-- Path 1: pCR -->
+                        <div class="w-full md:w-1/2 flex flex-col items-center relative">
+                            <button id="btn-pcr" class="flowchart-node flowchart-choice w-full">
+                                <p class="font-bold">如果达到pCR</p>
+                                <span class="text-xs text-white">点击此处查看</span>
+                            </button>
+                            <div id="result-pcr" class="result-card w-full mt-4">
+                                <div class="border-2 border-dashed border-green-500 bg-green-50 p-4 rounded-lg">
+                                    <h4 class="font-bold text-green-800 text-lg text-center mb-2">临床决策：“降辅”或观察</h4>
+                                    <p class="text-sm text-green-700 mb-3">新辅助治疗已获得深度缓解，患者预后极佳，可考虑减少或避免额外辅助治疗，以减轻治疗负担。</p>
+                                    <ul class="space-y-2 text-sm">
+                                        <li class="flex items-start">
+                                            <span class="text-green-600 mr-2">✔</span>
+                                            <div><strong>证据:</strong> CheckMate 816研究显示，pCR患者<strong>5年OS率高达95%</strong>。同时，曲线对比显示pCR患者在“新辅助+辅助”与“仅新辅助”方案间的生存获益高度重合。</div>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Path 2: non-pCR -->
+                        <div class="w-full md:w-1/2 flex flex-col items-center relative">
+                            <button id="btn-non-pcr" class="flowchart-node flowchart-choice w-full">
+                                <p class="font-bold">如果未达pCR</p>
+                                <span class="text-xs text-white">点击此处查看</span>
+                            </button>
+                            <div id="result-non-pcr" class="result-card w-full mt-4">
+                                <div class="border-2 border-dashed border-blue-500 bg-blue-50 p-4 rounded-lg">
+                                    <h4 class="font-bold text-blue-800 text-lg text-center mb-2">临床决策：精准辅助</h4>
+                                    <p class="text-sm text-blue-700 mb-3">患者仍有较高复发风险，是后续辅助免疫治疗的“高收益人群”，应考虑继续治疗以最大化生存获益。</p>
+                                    <ul class="space-y-2 text-sm">
+                                        <li class="flex items-start">
+                                            <span class="text-blue-600 mr-2">✔</span>
+                                            <div><strong>证据:</strong> CheckMate 77T研究显示，非pCR患者中，继续辅助治疗可<strong>显著延长EFS</strong>。曲线对比显示“新辅助+辅助”与“仅新辅助”的生存曲线显著分离。</div>
+                                        </li>
+                                        <li class="flex items-start">
+                                            <span class="text-blue-600 mr-2">✔</span>
+                                            <div><strong>支持:</strong> 对于PD-L1阴性患者，77T围术期方案同样显示出获益趋势，体现了方案的普适性与精准性。</div>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Section 3: Conclusion -->
+        <section id="conclusion">
+            <div class="bg-white p-8 rounded-xl shadow-lg">
+                <h2 class="text-2xl font-bold text-center text-[#005A70] mb-6">核心优势与结论</h2>
+                <div class="grid md:grid-cols-2 gap-6 mb-8 text-center">
+                    <div class="border border-gray-200 p-4 rounded-lg">
+                        <div class="text-4xl accent-text mb-2">✓</div>
+                        <h3 class="font-bold text-lg">唯一性与证据</h3>
+                        <p class="text-gray-600 text-sm">欧狄沃®是目前<strong>唯一</strong>拥有新辅助适应症的PD-1抑制剂，拥有<strong>最长、最完整</strong>的围术期临床证据链。</p>
+                    </div>
+                    <div class="border border-gray-200 p-4 rounded-lg">
+                        <div class="text-4xl accent-text mb-2">🚀</div>
+                        <h3 class="font-bold text-lg">简便高效</h3>
+                        <p class="text-gray-600 text-sm">仅需<strong>3周新辅助治疗</strong>，即可让<strong>四分之一</strong>患者达到pCR，实现<strong>5年95%</strong>的生存期，为患者争取显著的生存优势。</p>
+                    </div>
+                    <div class="border border-gray-200 p-4 rounded-lg">
+                        <div class="text-4xl accent-text mb-2">🎯</div>
+                        <h3 class="font-bold text-lg">精准治疗</h3>
+                        <p class="text-gray-600 text-sm">方案能根据新辅助疗效<strong>精准分层</strong>，避免过度治疗，同时确保<strong>非pCR患者</strong>和<strong>PD-L1阴性患者</strong>等患者通过免疫辅助治疗获得更好的疗效。</p>
+                    </div>
+                     <div class="border border-gray-200 p-4 rounded-lg">
+                        <div class="text-4xl accent-text mb-2">🛡️</div>
+                        <h3 class="font-bold text-lg">安全性</h3>
+                        <p class="text-gray-600 text-sm">两大研究均证实，欧狄沃®联合化疗方案的安全性可控，未发现新的安全性信号。</p>
+                    </div>
+                </div>
+                <p class="text-center text-gray-800 font-semibold">结论：CheckMate 816和77T研究相互补充，共同构建了“强效新辅，精准辅助”的完整逻辑闭环。这一模式不仅为患者带来了显著的长期生存获益，也为临床医生提供了科学、精准的治疗决策依据。</p>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="text-center p-4 mt-8">
+        <p class="text-xs text-gray-500">本内容仅供专业医学人士参考，所有信息均基于已发表的临床研究数据。</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const pcrChartCtx = document.getElementById('pcrChart').getContext('2d');
+            const osDonutChartCtx = document.getElementById('osDonutChart').getContext('2d');
+            const btnCm816 = document.getElementById('btn-cm816');
+            const btnCm77t = document.getElementById('btn-cm77t');
+            const chartCaption = document.getElementById('chart-caption');
+
+            const dataCm816 = {
+                labels: ['欧狄沃®+化疗', '单纯化疗'],
+                datasets: [{
+                    label: 'pCR 率 (%)',
+                    data: [24, 2.2],
+                    backgroundColor: ['#005A70', '#A0A0A0'],
+                    borderColor: ['#004D5C', '#888888'],
+                    borderWidth: 1,
+                    borderRadius: 5,
+                }]
+            };
+
+            const dataCm77t = {
+                labels: ['欧狄沃®+化疗 (全人群)', '单纯化疗', '欧狄沃®+化疗 (中国亚组)'],
+                datasets: [{
+                    label: 'pCR 率 (%)',
+                    data: [25.3, 4.7, 35.1],
+                    backgroundColor: ['#005A70', '#A0A0A0', '#C0A062'],
+                    borderColor: ['#004D5C', '#888888', '#A08042'],
+                    borderWidth: 1,
+                    borderRadius: 5,
+                }]
+            };
+
+            const chartOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: 'y',
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        max: 40,
+                        title: {
+                            display: true,
+                            text: 'pCR 率 (%)'
+                        }
+                    },
+                    y: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return ` ${context.dataset.label}: ${context.raw}%`;
+                            }
+                        }
+                    }
+                }
+            };
+
+            let pcrChart = new Chart(pcrChartCtx, {
+                type: 'bar',
+                data: dataCm816,
+                options: chartOptions
+            });
+
+            function updatePcrChart(data, caption) {
+                pcrChart.data = data;
+                if(data === dataCm77t){
+                    pcrChart.options.scales.x.max = 40;
+                } else {
+                    pcrChart.options.scales.x.max = 30;
+                }
+                pcrChart.update();
+                chartCaption.textContent = caption;
+            }
+
+            btnCm816.addEventListener('click', () => {
+                btnCm816.classList.add('active');
+                btnCm77t.classList.remove('active');
+                updatePcrChart(dataCm816, 'CheckMate 816: 欧狄沃®+化疗组的pCR率是单纯化疗组的10倍以上。');
+            });
+
+            btnCm77t.addEventListener('click', () => {
+                btnCm77t.classList.add('active');
+                btnCm816.classList.remove('active');
+                updatePcrChart(dataCm77t, 'CheckMate 77T: 复现高pCR率，中国亚组数据尤其突出。');
+            });
+            
+            new Chart(osDonutChartCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['5年生存', ''],
+                    datasets: [{
+                        data: [95, 5],
+                        backgroundColor: ['#C0A062', '#EAEAEA'],
+                        borderColor: ['#F8F7F4'],
+                        borderWidth: 2,
+                        cutout: '70%'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { enabled: false }
+                    }
+                }
+            });
+
+            const btnPcr = document.getElementById('btn-pcr');
+            const btnNonPcr = document.getElementById('btn-non-pcr');
+            const resultPcr = document.getElementById('result-pcr');
+            const resultNonPcr = document.getElementById('result-non-pcr');
+            
+            btnPcr.addEventListener('click', () => {
+                btnPcr.classList.toggle('selected');
+                resultPcr.classList.toggle('visible');
+                if (btnNonPcr.classList.contains('selected')) {
+                    btnNonPcr.classList.remove('selected');
+                    resultNonPcr.classList.remove('visible');
+                }
+            });
+
+            btnNonPcr.addEventListener('click', () => {
+                btnNonPcr.classList.toggle('selected');
+                resultNonPcr.classList.toggle('visible');
+                if (btnPcr.classList.contains('selected')) {
+                    btnPcr.classList.remove('selected');
+                    resultPcr.classList.remove('visible');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
